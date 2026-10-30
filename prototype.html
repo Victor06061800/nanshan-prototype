@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>南山小程序 · 高保真交互原型</title>
+<style>
+  :root{
+    --primary:#2E7DD1; --primary-d:#1F5FA8; --accent:#FF7A29; --accent-d:#E8650F;
+    --teal:#19B3A6; --green:#27AE60; --bg:#EEF1F5; --card:#fff;
+    --text:#1F2533; --sub:#8A93A2; --line:#ECEFF3; --warn:#F2994A;
+    --r:16px;
+  }
+  *{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+    background:#d9dee6; color:var(--text); display:flex; justify-content:center;
+    min-height:100vh; padding:24px 0;
+  }
+  /* 手机外壳 */
+  .phone{
+    width:390px; height:844px; background:#000; border-radius:46px; padding:11px;
+    box-shadow:0 24px 60px rgba(0,0,0,.35); position:relative; overflow:hidden; flex:none;
+  }
+  .screen-wrap{
+    width:100%; height:100%; background:var(--bg); border-radius:36px; overflow:hidden;
+    position:relative; display:flex; flex-direction:column;
+  }
+  @media(max-width:480px){ body{padding:0;} .phone{width:100vw;height:100vh;border-radius:0;padding:0;box-shadow:none;} .screen-wrap{border-radius:0;} }
+
+  /* 状态栏 */
+  .statusbar{height:44px; background:var(--primary); color:#fff; display:flex; align-items:center; justify-content:space-between; padding:0 22px; font-size:14px; font-weight:600; flex:none;}
+  .statusbar .right{display:flex; align-items:center; gap:6px;}
+  .statusbar svg{display:block;}
+
+  /* 导航头（微信风格：返回 + 标题 + 胶囊） */
+  .nav{height:46px; background:var(--primary); color:#fff; display:flex; align-items:center; padding:0 8px; position:relative; flex:none;}
+  .nav .back{width:40px; height:40px; display:flex; align-items:center; justify-content:center; cursor:pointer;}
+  .nav .title{position:absolute; left:0; right:0; text-align:center; font-size:17px; font-weight:600; pointer-events:none;}
+  .nav .capsule{margin-left:auto; display:flex; align-items:center; gap:6px; background:rgba(255,255,255,.22); border-radius:14px; padding:4px 10px; font-size:12px;}
+  .nav .capsule i{width:6px;height:6px;border-radius:50%;background:#fff;display:inline-block;}
+
+  /* 视图容器 */
+  #screen{flex:1; position:relative; overflow:hidden;}
+  .view{position:absolute; inset:0; overflow-y:auto; -webkit-overflow-scrolling:touch; background:var(--bg); display:none; animation:fade .22s ease;}
+  .view.active{display:block;}
+  @keyframes fade{from{opacity:0; transform:translateX(12px);} to{opacity:1; transform:none;}}
+
+  .pad{padding:14px 16px;}
+  .section-title{font-size:15px; font-weight:700; margin:18px 16px 10px; display:flex; align-items:center; justify-content:space-between;}
+  .section-title .more{font-size:12px; color:var(--sub); font-weight:500;}
+
+  /* 卡片 */
+  .card{background:var(--card); border-radius:var(--r); padding:14px; margin:0 16px 12px; box-shadow:0 2px 10px rgba(31,58,95,.05);}
+  .card.tap{cursor:pointer; transition:transform .08s;}
+  .card.tap:active{transform:scale(.985);}
+
+  /* 顶部搜索 */
+  .search{margin:12px 16px 4px; background:#fff; border-radius:20px; height:38px; display:flex; align-items:center; gap:8px; padding:0 14px; color:var(--sub); font-size:13px; box-shadow:0 1px 6px rgba(0,0,0,.04);}
+
+  /* 角色切换 chip */
+  .rolechip{display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,.2); color:#fff; border-radius:16px; padding:6px 12px; font-size:13px; margin:10px 16px 0; cursor:pointer;}
+
+  /* 分类宫格（精神文化=琴棋书画） */
+  .cats{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; padding:14px 16px 4px;}
+  .cat{background:#fff; border-radius:14px; padding:12px 4px; text-align:center; cursor:pointer; transition:transform .08s;}
+  .cat:active{transform:scale(.95);}
+  .cat .emoji{font-size:26px;}
+  .cat .lbl{font-size:12px; margin-top:6px; color:#33475b;}
+  .cat.hl{background:#FFF6E9;}
+
+  /* 需求/任务卡 */
+  .demand{display:flex; gap:12px;}
+  .ava{width:44px; height:44px; border-radius:50%; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:17px; flex:none;}
+  .demand .body{flex:1; min-width:0;}
+  .demand .t{font-size:15px; font-weight:600; display:flex; align-items:center; gap:6px;}
+  .tag{font-size:10px; padding:1px 7px; border-radius:8px; background:#EAF2FB; color:var(--primary); font-weight:600;}
+  .tag.sp{background:#FDEEE0; color:var(--accent);}
+  .tag.cert{background:#E7F7F2; color:var(--teal);}
+  .demand .d{font-size:12.5px; color:var(--sub); margin-top:4px; line-height:1.5; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;}
+  .demand .meta{font-size:11.5px; color:var(--sub); margin-top:8px; display:flex; gap:14px; flex-wrap:wrap;}
+  .demand .meta b{color:#33475b; font-weight:600;}
+  .reward{color:var(--accent); font-weight:700;}
+
+  /* 按钮 */
+  .btn{display:block; width:100%; border:none; border-radius:12px; padding:13px; font-size:15px; font-weight:700; cursor:pointer; font-family:inherit;}
+  .btn.primary{background:var(--primary); color:#fff;}
+  .btn.primary:active{background:var(--primary-d);}
+  .btn.accent{background:var(--accent); color:#fff;}
+  .btn.accent:active{background:var(--accent-d);}
+  .btn.ghost{background:#fff; color:var(--primary); border:1.5px solid var(--primary);}
+  .btn.sm{display:inline-block; width:auto; padding:8px 16px; font-size:13px; border-radius:20px;}
+  .btn:disabled{opacity:.5;}
+
+  /* 悬浮发单按钮 */
+  .fab{position:absolute; right:16px; bottom:78px; background:var(--accent); color:#fff; border-radius:26px; padding:12px 20px; font-weight:700; font-size:14px; box-shadow:0 8px 20px rgba(255,122,41,.4); cursor:pointer; z-index:20;}
+  .fab:active{background:var(--accent-d);}
+
+  /* 底部 Tab */
+  #tabbar{height:58px; background:#fff; border-top:1px solid var(--line); display:none; align-items:center; flex:none; padding-bottom:env(safe-area-inset-bottom);}
+  #tabbar.show{display:flex;}
+  .tab{flex:1; text-align:center; color:var(--sub); font-size:11px; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:3px;}
+  .tab.active{color:var(--primary);}
+  .tab svg{width:24px; height:24px;}
+
+  /* 表单 */
+  .field{margin:0 16px 14px; background:#fff; border-radius:12px; padding:12px 14px;}
+  .field label{font-size:12px; color:var(--sub); display:block; margin-bottom:6px;}
+  .field input, .field textarea, .field select{width:100%; border:none; outline:none; font-size:14px; font-family:inherit; color:var(--text); background:transparent; resize:none;}
+  .field textarea{min-height:64px;}
+  .seg{display:flex; gap:8px; flex-wrap:wrap;}
+  .seg .opt{font-size:13px; padding:8px 14px; border-radius:18px; background:#F2F4F7; color:#555; cursor:pointer;}
+  .seg .opt.on{background:var(--primary); color:#fff;}
+
+  /* 底部弹层 / 动作面板 */
+  .mask{position:absolute; inset:0; background:rgba(0,0,0,.45); display:none; z-index:40;}
+  .mask.show{display:block;}
+  .sheet{position:absolute; left:0; right:0; bottom:0; background:#fff; border-radius:18px 18px 0 0; padding:18px 16px 28px; transform:translateY(100%); transition:transform .25s ease; z-index:41;}
+  .sheet.show{transform:none;}
+  .sheet h4{font-size:15px; margin-bottom:14px; text-align:center;}
+  .sheet .row{display:flex; gap:12px; padding:14px 6px; border-bottom:1px solid var(--line); font-size:15px; cursor:pointer; align-items:center;}
+  .sheet .row:active{background:#f6f7f9;}
+  .sheet .cancel{margin-top:14px; text-align:center; color:var(--sub); padding:12px; font-size:15px; cursor:pointer;}
+
+  /* Toast */
+  .toast{position:absolute; left:50%; bottom:120px; transform:translateX(-50%); background:rgba(0,0,0,.82); color:#fff; padding:11px 18px; border-radius:22px; font-size:13px; opacity:0; transition:opacity .2s; z-index:60; white-space:nowrap; pointer-events:none;}
+  .toast.show{opacity:1;}
+
+  /* 启动页 */
+  #view-splash{display:flex; flex-direction:column; align-items:center; justify-content:center; background:linear-gradient(160deg,#2E7DD1,#1F5FA8); color:#fff; text-align:center;}
+  #view-splash .logo{width:96px; height:96px; border-radius:26px; background:rgba(255,255,255,.16); display:flex; align-items:center; justify-content:center; font-size:46px; margin-bottom:18px;}
+  #view-splash h1{font-size:26px; letter-spacing:6px; font-weight:800;}
+  #view-splash p{margin-top:10px; font-size:13px; opacity:.85;}
+  #view-splash .enter{margin-top:42px; font-size:13px; opacity:.9; border:1px solid rgba(255,255,255,.6); padding:9px 22px; border-radius:22px; cursor:pointer;}
+
+  /* 个人中心 */
+  .pc-head{background:linear-gradient(135deg,#2E7DD1,#3FA9C9); color:#fff; padding:24px 18px 20px;}
+  .pc-head .row{display:flex; align-items:center; gap:14px;}
+  .pc-head .bigava{width:64px; height:64px; border-radius:50%; background:rgba(255,255,255,.25); display:flex; align-items:center; justify-content:center; font-size:28px; font-weight:700;}
+  .pc-head .name{font-size:19px; font-weight:700;}
+  .pc-head .roles{font-size:12px; opacity:.9; margin-top:4px;}
+  .stats{display:grid; grid-template-columns:repeat(4,1fr); background:#fff; margin:-14px 16px 0; border-radius:14px; padding:14px 0; box-shadow:0 4px 14px rgba(0,0,0,.06); position:relative;}
+  .stats div{text-align:center;}
+  .stats b{font-size:18px; color:var(--primary); display:block;}
+  .stats span{font-size:11px; color:var(--sub);}
+  .menu{background:#fff; border-radius:14px; margin:14px 16px; overflow:hidden;}
+  .menu .mi{display:flex; align-items:center; gap:12px; padding:14px; border-bottom:1px solid var(--line); font-size:14px; cursor:pointer;}
+  .menu .mi:last-child{border-bottom:none;}
+  .menu .mi .em{font-size:18px;}
+  .menu .mi .ar{margin-left:auto; color:#cfd5dd;}
+
+  /* 社区食堂 */
+  .canteen .name{font-size:15px; font-weight:600;}
+  .canteen .sub{font-size:12px; color:var(--sub); margin-top:4px;}
+  .pill{display:inline-block; font-size:11px; background:#EAF2FB; color:var(--primary); padding:2px 9px; border-radius:10px; margin-right:6px; margin-top:8px;}
+
+  /* 聊天 */
+  .chat-body{padding:14px; display:flex; flex-direction:column; gap:12px;}
+  .bub{max-width:74%; padding:10px 13px; border-radius:14px; font-size:14px; line-height:1.5;}
+  .bub.them{background:#fff; align-self:flex-start; border-top-left-radius:4px;}
+  .bub.me{background:var(--primary); color:#fff; align-self:flex-end; border-top-right-radius:4px;}
+  .chat-input{display:flex; gap:8px; padding:10px 12px; background:#fff; border-top:1px solid var(--line);}
+  .chat-input input{flex:1; border:none; outline:none; background:#F2F4F7; border-radius:18px; padding:9px 14px; font-size:14px; font-family:inherit;}
+  .chat-input .send{background:var(--primary); color:#fff; border:none; border-radius:18px; padding:0 16px; font-size:14px; font-weight:600; cursor:pointer;}
+
+  .badge{position:absolute; top:6px; right:18px; background:var(--accent); color:#fff; font-size:10px; border-radius:9px; padding:1px 5px;}
+  .hint{font-size:11px; color:var(--sub); text-align:center; margin-top:8px;}
+  .upload{display:flex; gap:10px;}
+  .upbox{width:64px; height:64px; border:1.5px dashed #cfd5dd; border-radius:12px; display:flex; flex-direction:column; align-items:center; justify-content:center; color:var(--sub); font-size:11px; cursor:pointer;}
+  .upbox .plus{font-size:22px; line-height:1;}
+  .upbox.done{border-style:solid; border-color:var(--green); color:var(--green);}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="screen-wrap">
+    <!-- 启动页 -->
+    <section class="view" id="view-splash">
+      <div class="logo">🏔️</div>
+      <h1>南 山</h1>
+      <p>喘息服务 · 陪伴每一程</p>
+      <div class="enter" data-action="enterApp">进入原型演示 ›</div>
+    </section>
+
+    <!-- 主视图容器（含状态栏/导航/内容） -->
+    <div id="app" style="display:none; flex:1; flex-direction:column; min-height:0;">
+      <div class="statusbar">
+        <span>9:41</span>
+        <span class="right">
+          <svg width="17" height="12" viewBox="0 0 17 12"><g fill="#fff"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="4.5" y="4.5" width="3" height="7.5" rx="1"/><rect x="9" y="2" width="3" height="10" rx="1"/><rect x="13.5" y="0" width="3" height="12" rx="1"/></g></svg>
+          <svg width="16" height="12" viewBox="0 0 16 12"><path fill="#fff" d="M8 11.5 0 4.2C2.4 1.7 5.5 0 8 0s5.6 1.7 8 4.2z" opacity=".9"/></svg>
+          <svg width="24" height="12" viewBox="0 0 24 12"><rect x="1" y="1.5" width="19" height="9" rx="2.5" fill="none" stroke="#fff" stroke-width="1.2"/><rect x="3" y="3.5" width="13" height="5" rx="1" fill="#fff"/><rect x="21" y="4" width="2" height="4" rx="1" fill="#fff"/></svg>
+        </span>
+      </div>
+
+      <!-- 导航头（动态） -->
+      <div class="nav" id="nav">
+        <div class="back" id="navBack" data-action="back" style="visibility:hidden;">
+          <svg width="12" height="20" viewBox="0 0 12 20"><path d="M10 2 2 10l8 8" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="title" id="navTitle">南山</div>
+        <div class="capsule"><i></i><i></i></div>
+      </div>
+
+      <!-- 内容区 -->
+      <div id="screen">
+        <!-- 首页 -->
+        <section class="view" id="view-home">
+          <div class="rolechip" data-action="switchRole">我是：<span id="roleLabel">需求方</span> ▾</div>
+          <div class="search">🔍 搜索陪伴 / 代办 / 助餐 / 琴棋书画…</div>
+          <div class="cats">
+            <div class="cat" data-type="生活照料"><div class="emoji">🍲</div><div class="lbl">生活照料</div></div>
+            <div class="cat" data-type="健康照护"><div class="emoji">💊</div><div class="lbl">健康照护</div></div>
+            <div class="cat hl" data-type="精神文化"><div class="emoji">🎨</div><div class="lbl">琴棋书画</div></div>
+            <div class="cat" data-type="安全应急"><div class="emoji">🛡️</div><div class="lbl">安全应急</div></div>
+          </div>
+          <div class="card tap" data-action="openCanteenList" style="background:linear-gradient(135deg,#FF8A3D,#FF6B3D);color:#fff;display:flex;align-items:center;justify-content:space-between;">
+            <div><div style="font-weight:700;font-size:15px;">🍚 社区食堂 · 助餐陪餐</div><div style="font-size:12px;opacity:.92;margin-top:4px;">政府补贴 · 积分可抵餐费</div></div>
+            <div style="font-size:13px;">去核销 ›</div>
+          </div>
+          <div class="section-title">附近的陪伴需求 <span class="more" data-action="goHall">接单大厅 ›</span></div>
+          <div id="homeList"></div>
+        </section>
+
+        <!-- 接单大厅 -->
+        <section class="view" id="view-hall">
+          <div class="pad" style="padding-bottom:6px;display:flex;gap:8px;flex-wrap:wrap;">
+            <span class="tag on" data-filter="全部" style="cursor:pointer;padding:6px 12px;">全部</span>
+            <span class="tag" data-filter="生活照料" style="cursor:pointer;padding:6px 12px;">生活照料</span>
+            <span class="tag" data-filter="健康照护" style="cursor:pointer;padding:6px 12px;">健康照护</span>
+            <span class="tag" data-filter="精神文化" style="cursor:pointer;padding:6px 12px;">琴棋书画</span>
+            <span class="tag" data-filter="安全应急" style="cursor:pointer;padding:6px 12px;">安全应急</span>
+          </div>
+          <div id="hallList"></div>
+        </section>
+
+        <!-- 消息 -->
+        <section class="view" id="view-messages">
+          <div class="section-title" style="margin-top:14px;">会话</div>
+          <div id="msgList"></div>
+          <div class="hint">应用内消息基于云数据库 watch 实时监听（MVP 方案）</div>
+        </section>
+
+        <!-- 我的 -->
+        <section class="view" id="view-profile">
+          <div class="pc-head">
+            <div class="row">
+              <div class="bigava">周</div>
+              <div><div class="name">周老师</div><div class="roles">角色：<span id="profileRoles">需求方</span> · 信用分 <b>98</b></div></div>
+            </div>
+          </div>
+          <div class="stats">
+            <div><b id="stCredit">98</b><span>信用分</span></div>
+            <div><b id="stHours">12</b><span>志愿时长</span></div>
+            <div><b id="stPoints">240</b><span>积分</span></div>
+            <div><b id="stCompanion">8</b><span>陪伴次数</span></div>
+          </div>
+          <div class="menu">
+            <div class="mi" data-action="openMyOrders"><span class="em">📋</span>我的订单<span class="ar">›</span></div>
+            <div class="mi" data-action="openMyTasks"><span class="em">🤝</span>我的接单<span class="ar">›</span></div>
+            <div class="mi" data-action="openVerify"><span class="em">🎓</span>大学生认证<span class="ar" id="verifyAr">›</span></div>
+            <div class="mi" data-action="openCanteenList"><span class="em">🍚</span>社区食堂<span class="ar">›</span></div>
+            <div class="mi" data-action="toast" data-msg="设置（演示）"><span class="em">⚙️</span>设置<span class="ar">›</span></div>
+          </div>
+          <div class="hint">志愿者 / 实习证明可由平台 + 居委会 + 学校三方背书生成</div>
+        </section>
+
+        <!-- 发单 -->
+        <section class="view" id="view-publish">
+          <div class="field"><label>服务类型</label>
+            <div class="seg" id="pubType">
+              <span class="opt on" data-v="生活照料">生活照料</span>
+              <span class="opt" data-v="健康照护">健康照护</span>
+              <span class="opt" data-v="精神文化">琴棋书画</span>
+              <span class="opt" data-v="安全应急">安全应急</span>
+            </div>
+          </div>
+          <div class="field"><label>标题</label><input id="pubTitle" placeholder="如：陪爷爷下象棋 / 代取社区医院药"></div>
+          <div class="field"><label>详细描述</label><textarea id="pubDesc" placeholder="时间、对象、注意事项…"></textarea></div>
+          <div class="field"><label>期望时间</label><input id="pubTime" placeholder="如：今天 14:00 - 16:00"></div>
+          <div class="field"><label>地点</label><input id="pubAddr" placeholder="如：南山路 12 号 3 栋"></div>
+          <div class="field"><label>联系人</label><input id="pubContact" placeholder="如：王阿姨 138****0000"></div>
+          <div class="field"><label>报酬方式</label>
+            <div class="seg" id="pubReward">
+              <span class="opt on" data-v="志愿时长">志愿时长</span>
+              <span class="opt" data-v="积分">积分</span>
+              <span class="opt" data-v="现金">现金（增长期）</span>
+            </div>
+          </div>
+          <div class="pad"><button class="btn primary" data-action="submitPublish">发布需求</button></div>
+        </section>
+
+        <!-- 我的订单 -->
+        <section class="view" id="view-myOrders">
+          <div id="myOrdersList"></div>
+        </section>
+
+        <!-- 我的接单 -->
+        <section class="view" id="view-myTasks">
+          <div id="myTasksList"></div>
+        </section>
+
+        <!-- 订单/任务详情 -->
+        <section class="view" id="view-detail">
+          <div id="detailBody"></div>
+        </section>
+
+        <!-- 大学生认证 -->
+        <section class="view" id="view-verify">
+          <div class="field"><label>姓名</label><input id="vName" placeholder="真实姓名"></div>
+          <div class="field"><label>学校</label><input id="vSchool" placeholder="如：上海XX大学"></div>
+          <div class="field"><label>学号</label><input id="vNo" placeholder="学号"></div>
+          <div class="field"><label>上传学生证（人工/OCR 核验）</label>
+            <div class="upload">
+              <div class="upbox" data-upload="student"><div class="plus">+</div>学生证</div>
+            </div>
+          </div>
+          <div class="field"><label>专业证书（选填·持证医护解锁特殊类目）</label>
+            <div class="upload">
+              <div class="upbox" data-upload="cert"><div class="plus">+</div>资格证</div>
+            </div>
+            <div class="hint" style="text-align:left;margin-top:8px;">持医护/康复/急救证经核验后可接「持证医护特殊服务」</div>
+          </div>
+          <div class="pad"><button class="btn accent" data-action="submitVerify">提交审核</button></div>
+        </section>
+
+        <!-- 社区食堂列表 -->
+        <section class="view" id="view-canteen">
+          <div class="section-title" style="margin-top:14px;">附近社区食堂</div>
+          <div id="canteenList"></div>
+        </section>
+
+        <!-- 食堂详情 -->
+        <section class="view" id="view-canteenDetail">
+          <div id="canteenDetailBody"></div>
+        </section>
+
+        <!-- 聊天 -->
+        <section class="view" id="view-chat">
+          <div id="chatFlex" style="display:flex;flex-direction:column;height:100%;">
+            <div class="chat-body" id="chatBody" style="flex:1;overflow-y:auto;"></div>
+          </div>
+        </section>
+      </div>
+
+      <!-- 底部 Tab -->
+      <div id="tabbar">
+        <div class="tab active" data-route="home">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8M5 10v10h14V10"/></svg>首页
+        </div>
+        <div class="tab" data-route="hall">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s7-6.5 7-12a7 7 0 10-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg>接单大厅
+        </div>
+        <div class="tab" data-route="messages">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16v11H8l-4 4z"/></svg>消息
+          <span class="badge">2</span>
+        </div>
+        <div class="tab" data-route="profile">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>我的
+        </div>
+      </div>
+
+      <!-- 悬浮发单 -->
+      <div class="fab" id="fab" data-action="openPublish">＋ 发单</div>
+    </div>
+
+    <!-- 弹层 -->
+    <div class="mask" id="mask"></div>
+    <div class="sheet" id="sheet">
+      <h4 id="sheetTitle">请选择</h4>
+      <div id="sheetBody"></div>
+      <div class="cancel" data-action="closeSheet">取消</div>
+    </div>
+
+    <!-- 隐私弹窗 -->
+    <div class="mask show" id="privacyMask" style="display:none;">
+      <div class="sheet show" id="privacySheet" style="transform:none;">
+        <h4>隐私授权</h4>
+        <div style="font-size:13px;color:#555;line-height:1.7;max-height:240px;overflow-y:auto;padding:0 4px;">
+          欢迎使用「南山」喘息服务平台。我们重视您的隐私：<br>
+          · 健康、住址、手机号属敏感个人信息，将单独授权并加密存储；<br>
+          · 您可在「设置」中撤回授权；<br>
+          · 平台不主动公开您的身份信息，撮合仅向接单方展示必要信息。<br><br>
+          点击「同意」即表示您已阅读并同意《隐私政策》与《用户协议》。
+        </div>
+        <div style="display:flex;gap:10px;margin-top:16px;">
+          <button class="btn ghost" style="flex:1" data-action="disagree">不同意</button>
+          <button class="btn primary" style="flex:1" data-action="agree">同意并进入</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+/* ============ 数据 ============ */
+const AV_COLORS=['#2E7DD1','#19B3A6','#FF7A29','#9B6BF2','#27AE60','#F2994A'];
+function avaColor(name){let s=0;for(const c of name)s+=c.charCodeAt(0);return AV_COLORS[s%AV_COLORS.length];}
+
+let DEMANDS=[
+  {id:'d1',type:'生活照料',title:'陪老人去社区医院复诊',desc:'王阿姨需有人陪同步行 10 分钟到社区医院，协助取号、拿报告。',time:'今天 14:00',addr:'南山路12号',dist:'0.8km',reward:'志愿时长 2h',status:'待接单',poster:'王阿姨',initial:'王',urgent:true},
+  {id:'d2',type:'精神文化',title:'陪爷爷下象棋 / 聊聊书法',desc:'独居李爷爷爱象棋和书法，希望每周有人陪下两盘、写几字。',time:'周六 09:30',addr:'南山新村5栋',dist:'1.2km',reward:'积分 30',status:'待接单',poster:'李爷爷',initial:'李',urgent:false},
+  {id:'d3',type:'健康照护',title:'代取降压药并叮嘱服药',desc:'需持证医护优先；协助核对药名、记录血压。',time:'今天 17:00',addr:'康乐小区8栋',dist:'0.5km',reward:'志愿时长 1.5h',status:'待接单',poster:'张伯',initial:'张',urgent:false,cert:true},
+  {id:'d4',type:'安全应急',title:'夜间陪伴（子女出差）',desc:'子女出差 3 天，希望每晚有人电话/上门探望一次。',time:'每晚 20:00',addr:'南苑3栋',dist:'1.6km',reward:'积分 50',status:'待接单',poster:'陈阿姨',initial:'陈',urgent:false},
+  {id:'d5',type:'生活照料',title:'代买菜 + 简单做饭',desc:'腿脚不便，希望帮忙买菜并做一顿午饭。',time:'明天 10:00',addr:'幸福里2栋',dist:'0.9km',reward:'志愿时长 2h',status:'已接单',poster:'赵奶奶',initial:'赵',urgent:false,assigned:'你',mine:true},
+];
+let TASKS=[ {id:'t1',type:'生活照料',title:'陪逛超市买日用品',desc:'刘奶奶想去大润发，需要有人陪同并帮忙提物。',time:'今天 15:30',addr:'大润发(南山店)',dist:'1.0km',reward:'积分 20',status:'进行中',poster:'刘奶奶',initial:'刘'} ];
+let CANTEENS=[
+  {id:'c1',name:'幸福社区食堂',dist:'0.5km',subsidy:'政府补贴 3元/餐',rating:'4.8',tags:['助餐','陪餐','积分抵费'],desc:'每日提供适老软烂餐，志愿者可陪餐；积分可抵餐费，政府补贴同步核销。'},
+  {id:'c2',name:'南山长者餐厅',dist:'1.1km',subsidy:'积分 + 补贴双核销',rating:'4.6',tags:['助餐','送餐'],desc:'支持志愿者代取送餐，行动不便老人可预约送餐到户。'},
+];
+let MESSAGES=[
+  {id:'m1',name:'王阿姨',initial:'王',last:'明天 14:00 我在社区医院门口等您～',unread:2,me:[{t:'您好，我想约陪诊',me:false},{t:'好的王阿姨，我已接单，明天见',me:true}],them:[{t:'您好，我想约陪诊',me:false},{t:'好的王阿姨，我已接单，明天见',me:true},{t:'明天 14:00 我在社区医院门口等您～',me:false}]},
+  {id:'m2',name:'李爷爷',initial:'李',last:'那咱们周六见，我准备好棋了',unread:0,me:[{t:'爷爷周六我来陪您下棋',me:true}],them:[{t:'爷爷周六我来陪您下棋',me:true},{t:'那咱们周六见，我准备好棋了',me:false}]},
+];
+let ROLE='需求方';
+let VERIFIED=false;
+let FILTER='全部';
+
+/* ============ 工具 ============ */
+const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
+function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),1600);}
+function avatar(initial){return `<div class="ava" style="background:${avaColor(initial)}">${initial}</div>`;}
+
+function demandCard(d){
+  const tagHtml = d.cert?'<span class="tag cert">持证优先</span>':`<span class="tag">${d.type}</span>`;
+  const rewardCls = d.reward.includes('志愿')||d.reward.includes('积分')?'reward':'reward';
+  return `<div class="card tap" data-action="openDetail" data-id="${d.id}">
+    <div class="demand">
+      ${avatar(d.initial)}
+      <div class="body">
+        <div class="t">${d.title} ${tagHtml}</div>
+        <div class="d">${d.desc}</div>
+        <div class="meta"><span>🕒 <b>${d.time}</b></span><span>📍 ${d.addr} · ${d.dist}</span><span class="${rewardCls}">${d.reward}</span></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ============ 渲染列表 ============ */
+function renderHome(){
+  const nearby=DEMANDS.filter(d=>d.type!=='安全应急').slice(0,4);
+  $('#homeList').innerHTML = nearby.map(demandCard).join('')
+    + `<div class="hint">— 共 ${DEMANDS.length} 条附近需求，更多见接单大厅 —</div>`;
+}
+function renderHall(){
+  const list=DEMANDS.filter(d=> (FILTER==='全部'||d.type===FILTER) && (d.status==='待接单'||d.status==='已接单'));
+  $('#hallList').innerHTML = list.length? list.map(demandCard).join('') : `<div class="hint">该分类暂无待接需求</div>`;
+}
+function renderMyOrders(){
+  const list=DEMANDS.filter(d=>d.mine);
+  $('#myOrdersList').innerHTML = list.length? list.map(demandCard).join('') : `<div class="hint">还没有发布需求，点右下角「＋ 发单」试试</div>`
+    + `<div class="hint">仅演示：显示本人发布的订单</div>`;
+}
+function renderMyTasks(){
+  $('#myTasksList').innerHTML = TASKS.map(demandCard).join('') + `<div class="hint">已接单 ${TASKS.length} 项 · 志愿记录将生成证明</div>`;
+}
+function renderCanteens(){
+  $('#canteenList').innerHTML = CANTEENS.map(c=>`
+    <div class="card tap canteen" data-action="openCanteen" data-id="${c.id}">
+      <div class="name">${c.name} <span style="float:right;color:#FF7A29;font-size:12px;">★ ${c.rating}</span></div>
+      <div class="sub">📍 ${c.dist} · ${c.subsidy}</div>
+      <div>${c.tags.map(t=>`<span class="pill">${t}</span>`).join('')}</div>
+    </div>`).join('');
+}
+function renderMessages(){
+  $('#msgList').innerHTML = MESSAGES.map(m=>`
+    <div class="card tap" data-action="openChat" data-id="${m.id}">
+      <div class="demand">
+        ${avatar(m.initial)}
+        <div class="body">
+          <div class="t">${m.name} ${m.unread?`<span class="tag sp">${m.unread}</span>`:''}</div>
+          <div class="d">${m.last}</div>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+/* ============ 详情 ============ */
+function openDetail(id){
+  const d=DEMANDS.find(x=>x.id===id)||TASKS.find(x=>x.id===id);
+  if(!d)return;
+  const isSupply = ROLE==='供给方';
+  const canAccept = isSupply && (d.status==='待接单');
+  const actions = canAccept
+    ? `<button class="btn accent" data-action="acceptTask" data-id="${d.id}">立即接单</button>`
+    : (d.status==='进行中'?`<button class="btn primary" data-action="toast" data-msg="已确认完成，感谢陪伴">确认完成</button>`
+       : (d.status==='待接单'?`<button class="btn ghost" data-action="toast" data-msg="已取消订单">取消订单</button>`:''));
+  $('#detailBody').innerHTML = `
+    <div class="card">
+      <div class="demand">
+        ${avatar(d.initial)}
+        <div class="body">
+          <div class="t">${d.title} ${d.cert?'<span class="tag cert">持证优先</span>':`<span class="tag">${d.type}</span>`}</div>
+          <div class="meta"><span>状态：<b>${d.status}</b></span></div>
+        </div>
+      </div>
+      <div style="margin-top:12px;font-size:13px;line-height:1.7;color:#445;">${d.desc}</div>
+      <div class="meta" style="margin-top:12px;display:flex;flex-direction:column;gap:6px;">
+        <span>🕒 时间：<b>${d.time}</b></span>
+        <span>📍 地点：${d.addr} · ${d.dist}</span>
+        <span class="${'reward'}">报酬：${d.reward}</span>
+        <span>发布：<b>${d.poster}</b></span>
+      </div>
+    </div>
+    ${actions?`<div class="pad">${actions}</div>`:''}
+    <div class="hint">${isSupply?'供给方视角：可接单并查看联系方式':'需求方视角：状态实时同步'}</div>`;
+  App.show('detail');
+}
+function openCanteen(id){
+  const c=CANTEENS.find(x=>x.id===id); if(!c)return;
+  $('#canteenDetailBody').innerHTML=`
+    <div class="card">
+      <div class="name" style="font-size:17px;font-weight:700;">${c.name} <span style="float:right;color:#FF7A29;">★ ${c.rating}</span></div>
+      <div class="sub" style="margin-top:6px;">📍 ${c.dist} · ${c.subsidy}</div>
+      <div style="margin-top:10px;font-size:13px;line-height:1.7;color:#445;">${c.desc}</div>
+      <div style="margin-top:8px;">${c.tags.map(t=>`<span class="pill">${t}</span>`).join('')}</div>
+    </div>
+    <div class="pad"><button class="btn accent" data-action="redeem" data-id="${c.id}">扫码核销 / 积分抵费</button></div>`;
+  App.show('canteenDetail');
+}
+function openChat(id){
+  const m=MESSAGES.find(x=>x.id===id); if(!m)return;
+  $('#chatBody').innerHTML = m.them.map(b=>`<div class="bub ${b.me?'me':'them'}">${b.t}</div>`).join('');
+  $('#chatBody').scrollTop=$('#chatBody').scrollHeight;
+  $('#navTitle').textContent=m.name;
+  App._chat=m;
+  App.show('chat');
+}
+
+/* ============ 动作面板 / 角色切换 ============ */
+function switchRole(){
+  showSheet('切换身份',[
+    {label:'需求方（老人/家属/网格员）',sub:'发布陪伴与生活协助需求',act:()=>setRole('需求方')},
+    {label:'供给方（大学生）',sub:'浏览接单大厅、接单陪伴',act:()=>setRole('供给方')},
+  ]);
+}
+function setRole(r){
+  ROLE=r; $('#roleLabel').textContent=r; $('#profileRoles').textContent=r;
+  $('#fab').textContent = r==='供给方'?'＋ 发单(代)':'＋ 发单';
+  closeSheet(); toast('已切换为：'+r);
+}
+function showSheet(title,rows){
+  $('#sheetTitle').textContent=title;
+  $('#sheetBody').innerHTML = rows.map((r,i)=>`<div class="row" data-sheet="${i}">${r.label}${r.sub?`<div style="color:#999;font-size:12px;margin-top:2px;">${r.sub}</div>`:''}</div>`).join('');
+  $('#sheetBody')._rows=rows;
+  $('#mask').classList.add('show'); $('#sheet').classList.add('show');
+}
+function closeSheet(){$('#mask').classList.remove('show'); $('#sheet').classList.remove('show');}
+
+/* ============ 发布 / 认证 ============ */
+function submitPublish(){
+  const type=$('#pubType .opt.on').dataset.v;
+  const title=$('#pubTitle').value||'未命名需求';
+  const desc=$('#pubDesc').value||'（无详细描述）';
+  const d={id:'u'+Date.now(),type,title,desc,time:$('#pubTime').value||'待定',addr:$('#pubAddr').value||'待定',dist:'—',reward:$('#pubReward .opt.on').dataset.v,status:'待接单',poster:'我',initial:'我',mine:true};
+  DEMANDS.unshift(d); renderMyOrders(); toast('发布成功，已通知附近大学生'); App.show('myOrders');
+}
+function submitVerify(){
+  VERIFIED=true; $('#verifyAr').textContent='已认证 ✓';
+  toast('已提交，审核中（学生证 + 证书核验）'); App.show('profile');
+}
+
+/* ============ 路由 ============ */
+const App={
+  stack:[], current:null, _chat:null,
+  show(route){
+    $$('.view').forEach(v=>v.classList.remove('active'));
+    const el=document.getElementById('view-'+route); if(el)el.classList.add('active');
+    const tabs=['home','hall','messages','profile'];
+    const inTab=tabs.includes(route);
+    $('#tabbar').classList.toggle('show',inTab);
+    $('#fab').style.display=(route==='home'||route==='hall')?'block':'none';
+    $$('.tab').forEach(t=>t.classList.toggle('active',t.dataset.route===route));
+    // 导航标题与返回键
+    const titles={home:'南山',hall:'接单大厅',messages:'消息',profile:'我的',publish:'发布需求',myOrders:'我的订单',myTasks:'我的接单',detail:'详情',verify:'大学生认证',canteen:'社区食堂',canteenDetail:'食堂详情',chat:($('#navTitle').textContent||'消息')};
+    if(route!=='chat') $('#navTitle').textContent=titles[route]||'南山';
+    $('#navBack').style.visibility = this.stack.length? 'visible':'hidden';
+    const scr=document.getElementById('view-'+route); if(scr)scr.scrollTop=0;
+  },
+  go(route){ this.stack.push(this.current); this.show(route); },
+  back(){ if(this.stack.length){ const r=this.stack.pop(); this.show(r);} },
+  open(route){ this.stack=[]; this.show(route); }
+};
+
+/* ============ 事件委托 ============ */
+document.addEventListener('click',e=>{
+  const a=e.target.closest('[data-action]');
+  if(a){
+    const act=a.dataset.action;
+    switch(act){
+      case 'enterApp': $('#view-splash').style.display='none'; $('#app').style.display='flex'; $('#privacyMask').style.display='block'; break;
+      case 'agree': $('#privacyMask').style.display='none'; App.open('home'); renderHome(); renderHall(); renderCanteens(); renderMessages(); break;
+      case 'disagree': toast('需同意隐私授权才能使用'); break;
+      case 'back': App.back(); break;
+      case 'goHall': App.go('hall'); renderHall(); break;
+      case 'openPublish': App.go('publish'); break;
+      case 'openMyOrders': App.go('myOrders'); renderMyOrders(); break;
+      case 'openMyTasks': App.go('myTasks'); renderMyTasks(); break;
+      case 'openVerify': App.go('verify'); break;
+      case 'openCanteenList': App.go('canteen'); renderCanteens(); break;
+      case 'openCanteen': openCanteen(a.dataset.id); break;
+      case 'openDetail': openDetail(a.dataset.id); break;
+      case 'openChat': openChat(a.dataset.id); break;
+      case 'switchRole': switchRole(); break;
+      case 'closeSheet': closeSheet(); break;
+      case 'redeem': toast('核销成功，已抵扣 3 元（演示）'); break;
+      case 'submitPublish': submitPublish(); break;
+      case 'submitVerify': submitVerify(); break;
+      case 'toast': toast(a.dataset.msg||'演示'); break;
+      case 'acceptTask': {
+        const d=DEMANDS.find(x=>x.id===a.dataset.id); if(d){d.status='进行中'; d.assigned='你'; TASKS.unshift({...d}); toast('接单成功，请准时赴约'); renderHall(); renderMyTasks(); App.open('myTasks');}
+        break;
+      }
+    }
+    return;
+  }
+  // 分类点击 -> 预填类型进发单
+  const cat=e.target.closest('.cat');
+  if(cat){ $('#pubType').querySelectorAll('.opt').forEach(o=>o.classList.toggle('on',o.dataset.v===cat.dataset.type)); App.go('publish'); toast('已选类型：'+cat.dataset.type); return; }
+  // 大厅筛选
+  const flt=e.target.closest('[data-filter]');
+  if(flt){ FILTER=flt.dataset.filter; $$('#view-hall [data-filter]').forEach(s=>s.classList.toggle('on',s.dataset.filter===FILTER)); renderHall(); return; }
+  // 发单/报酬 分段选择
+  const opt=e.target.closest('.seg .opt');
+  if(opt){ opt.parentElement.querySelectorAll('.opt').forEach(o=>o.classList.remove('on')); opt.classList.add('on'); return; }
+  // 上传框
+  const up=e.target.closest('[data-upload]');
+  if(up){ up.classList.add('done'); up.innerHTML='<div style="font-size:22px">✓</div>'+(up.dataset.upload==='cert'?'资格证':'学生证'); toast('已选择照片（演示）'); return; }
+  // 动作面板行
+  const sheetRow=e.target.closest('[data-sheet]');
+  if(sheetRow){ const rows=$('#sheetBody')._rows; const r=rows[+sheetRow.dataset.sheet]; closeSheet(); if(r&&r.act)r.act(); return; }
+  // 底部 Tab
+  const tab=e.target.closest('.tab');
+  if(tab){ App.open(tab.dataset.route); if(tab.dataset.route==='hall')renderHall(); if(tab.dataset.route==='messages')renderMessages(); return; }
+  // 遮罩关闭
+  if(e.target.id==='mask'){ closeSheet(); }
+});
+
+// 聊天输入框渲染（首次进入 chat 视图时挂载）
+const chatInputMount=()=>{ if($('#view-chat .chat-input'))return; const flex=$('#chatFlex'); const input=document.createElement('div'); input.className='chat-input'; input.innerHTML=`<input placeholder="输入消息…"><button class="send" data-action="sendChat">发送</button>`; flex.appendChild(input); };
+const _show=App.show.bind(App); App.show=function(r){ _show(r); if(r==='chat')chatInputMount(); };
+document.addEventListener('click',e=>{ if(e.target.closest('[data-action="sendChat"]')){ const inputEl=document.querySelector('#view-chat .chat-input input'); const v=inputEl.value.trim(); if(!v)return; App._chat.them.push({t:v,me:true}); const body=$('#chatBody'); body.innerHTML+=`<div class="bub me">${v}</div>`; inputEl.value=''; body.scrollTop=body.scrollHeight; setTimeout(()=>{ const reply='好的，辛苦啦～'; App._chat.them.push({t:reply,me:false}); body.innerHTML+=`<div class="bub them">${reply}</div>`; body.scrollTop=body.scrollHeight; },700);} });
+</script>
+</body>
+</html>

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>南山小程序 · 原型预览</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:#eef1f5;color:#1f2533;display:flex;justify-content:center;min-height:100vh;align-items:center;padding:24px;}
+  .wrap{width:100%;max-width:480px;}
+  .head{text-align:center;margin-bottom:26px;}
+  .head .logo{font-size:40px;}
+  .head h1{font-size:24px;font-weight:800;color:#1f3a5f;letter-spacing:3px;margin-top:8px;}
+  .head p{font-size:13px;color:#8a93a2;margin-top:8px;line-height:1.6;}
+  .card{display:block;text-decoration:none;background:#fff;border-radius:18px;padding:20px;margin-bottom:14px;box-shadow:0 6px 18px rgba(31,58,95,.08);transition:transform .1s;border:1px solid #eef1f5;}
+  .card:active{transform:scale(.985);}
+  .card .t{font-size:17px;font-weight:700;color:#1f3a5f;display:flex;align-items:center;gap:10px;}
+  .card .d{font-size:13px;color:#6b7280;margin-top:8px;line-height:1.6;}
+  .card .go{float:right;color:#2e7dd1;font-weight:700;font-size:14px;}
+  .badge{display:inline-block;background:#FF7A29;color:#fff;font-size:10px;padding:2px 8px;border-radius:9px;vertical-align:middle;}
+  .foot{font-size:11px;color:#aab1bd;text-align:center;margin-top:18px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <div class="logo">🏔️</div>
+    <h1>南 山</h1>
+    <p>喘息服务双向撮合小程序 · 原型预览<br>请选择要查看的版本</p>
+  </div>
+
+  <a class="card" href="prototype.html">
+    <span class="go">打开 ›</span>
+    <div class="t">📱 高保真交互原型 <span class="badge">推荐</span></div>
+    <div class="d">可点击、可跳转的仿真 App：启动→隐私授权→首页/接单大厅/消息/我的，发单、接单、认证、社区食堂核销、即时聊天等主流程均可演示。</div>
+  </a>
+
+  <a class="card" href="%E5%8D%97%E5%B1%B1%E5%B0%8F%E7%A8%8B%E5%BA%8F%E5%8E%9F%E5%9E%8B%E7%BA%BF%E6%A1%86.html">
+    <span class="go">打开 ›</span>
+    <div class="t">📐 低保真线框总览</div>
+    <div class="d">11 页静态线框（桌面端并排总览），用于快速对齐页面结构与核心模块。</div>
+  </a>
+
+  <div class="foot">© 南山小程序 · 原型阶段，仅供产品评审与协作参考</div>
+</div>
+</body>
+</html>
